@@ -1,6 +1,7 @@
 package roomescape;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +22,20 @@ public class ReservationController {
 
     private final List<Reservation> reservations = new ArrayList<>();
     private final AtomicLong index = new AtomicLong(0);
+    private final JdbcTemplate jdbcTemplate;
+
+    public ReservationController(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @GetMapping
     public ResponseEntity<List<Reservation>> reservations() {
+        List<Reservation> reservations = jdbcTemplate.query("SELECT * FROM reservation", (rs, rowNum) -> new Reservation(
+                rs.getLong("id"),
+                rs.getString("name"),
+                rs.getString("date"),
+                rs.getString("time")
+        ));
         return ResponseEntity.ok(reservations);
     }
 
