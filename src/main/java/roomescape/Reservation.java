@@ -7,6 +7,9 @@ public class Reservation {
     private String time;
 
     public Reservation(Long id, String name, String date, String time) {
+        if (name.isEmpty() || date.isEmpty() || time.isEmpty()) {
+            throw ReservationException.illegalRequest(name, date, time);
+        }
         this.id = id;
         this.name = name;
         this.date = date;

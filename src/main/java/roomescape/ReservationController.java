@@ -2,6 +2,7 @@ package roomescape;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,7 +36,15 @@ public class ReservationController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (reservations.stream().noneMatch(reservation -> reservation.getId().equals(id))) {
+            throw ReservationException.notFound(id);
+        }
         reservations.removeIf(reservation -> reservation.getId().equals(id));
         return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(ReservationException.class)
+    public ResponseEntity<String> handle(ReservationException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
     }
 }
