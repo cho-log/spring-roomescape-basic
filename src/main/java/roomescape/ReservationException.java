@@ -5,8 +5,8 @@ public class ReservationException extends RuntimeException {
         super(message);
     }
 
-    public static ReservationException illegalRequest(String name, String date, String time) {
-        return new ReservationException("Reservation name, date, time can not be empty: " + name + date + time);
+    public static ReservationException illegalRequest(String name, String date) {
+        return new ReservationException("Reservation name, date, time can not be empty: " + name + date);
     }
 
     public static ReservationException notFound(Long id) {

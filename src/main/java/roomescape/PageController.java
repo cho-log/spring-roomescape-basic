@@ -12,6 +12,11 @@ public class PageController {
 
     @GetMapping("/reservation")
     public String reservation() {
-        return "admin/reservation-legacy";
+        return "admin/reservation";
+    }
+
+    @GetMapping("/schedule")
+    public String schedule() {
+        return "admin/schedule";
     }
 }

@@ -25,10 +25,10 @@ public class ReservationController {
     private final JdbcTemplate jdbcTemplate;
 
     private final RowMapper<Reservation> rowMapper = (rs, rowNum) -> new Reservation(
-            rs.getLong("id"),
-            rs.getString("name"),
-            rs.getString("date"),
-            rs.getString("time")
+            rs.getLong("reservation_id"),
+            rs.getString("reservation_name"),
+            rs.getString("reservation_date"),
+            new Schedule(rs.getLong("schedule_id"), rs.getString("schedule_time"))
     );
 
     public ReservationController(JdbcTemplate jdbcTemplate) {
@@ -37,28 +37,39 @@ public class ReservationController {
 
     @GetMapping
     public ResponseEntity<List<Reservation>> reservations() {
-        List<Reservation> reservations = jdbcTemplate.query("SELECT * FROM reservation", (rs, rowNum) -> new Reservation(
-                rs.getLong("id"),
-                rs.getString("name"),
-                rs.getString("date"),
-                rs.getString("time")
-        ));
+        String sql = "SELECT " +
+                "r.id AS reservation_id, " +
+                "r.name AS reservation_name, " +
+                "r.date AS reservation_date, " +
+                "s.id AS schedule_id, " +
+                "s.time AS schedule_time " +
+                "FROM reservation r JOIN schedule s ON r.schedule_id = s.id";
+        List<Reservation> reservations = jdbcTemplate.query(sql, rowMapper);
         return ResponseEntity.ok(reservations);
     }
 
     @PostMapping
     public ResponseEntity<Reservation> create(@RequestBody ReservationRequest request) {
+        if (request.getName().isEmpty() || request.getDate().isEmpty() || request.getScheduleId() == null) {
+            throw ReservationException.illegalRequest(request.getName(), request.getDate());
+        }
+
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(con -> {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO reservation (name, date, time) VALUES (?, ?, ?)", new String[]{"id"});
+            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO reservation (name, date, schedule_id) VALUES (?, ?, ?)", new String[]{"id"});
             preparedStatement.setString(1, request.getName());
             preparedStatement.setString(2, request.getDate());
-            preparedStatement.setString(3, request.getTime());
+            preparedStatement.setLong(3, request.getScheduleId());
             return preparedStatement;
         }, keyHolder);
 
-        Reservation reservation = new Reservation(keyHolder.getKey().longValue(), request.getName(), request.getDate(), request.getTime());
+        Schedule schedule = jdbcTemplate.query("SELECT * FROM schedule WHERE id = ?", (rs, rowNum) -> new Schedule(
+                rs.getLong("id"),
+                rs.getString("time")
+        ), request.getScheduleId()).stream().findFirst().orElseThrow(() -> ReservationException.notFound(request.getScheduleId()));
+
+        Reservation reservation = new Reservation(keyHolder.getKey().longValue(), request.getName(), request.getDate(), schedule);
 
         return ResponseEntity.created(URI.create("/reservations/" + reservation.getId())).body(reservation);
     }
@@ -67,7 +78,7 @@ public class ReservationController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         String selectSql = "SELECT * FROM reservation WHERE id = ?";
         List<Reservation> reservations = jdbcTemplate.query(selectSql, rowMapper, id);
-        Reservation reservation = reservations.stream().findFirst().orElseThrow(() -> ReservationException.notFound(id));
+        reservations.stream().findFirst().orElseThrow(() -> ReservationException.notFound(id));
 
         String deleteSql = "DELETE FROM reservation WHERE id = ?";
         jdbcTemplate.update(deleteSql, id);

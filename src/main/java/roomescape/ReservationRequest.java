@@ -3,12 +3,12 @@ package roomescape;
 public class ReservationRequest {
     private final String name;
     private final String date;
-    private final String time;
+    private final Long scheduleId;
 
-    public ReservationRequest(String name, String date, String time) {
+    public ReservationRequest(String name, String date, Long scheduleId) {
         this.name = name;
         this.date = date;
-        this.time = time;
+        this.scheduleId = scheduleId;
     }
 
     public String getName() {
@@ -19,8 +19,8 @@ public class ReservationRequest {
         return date;
     }
 
-    public String getTime() {
-        return time;
+    public Long getScheduleId() {
+        return scheduleId;
     }
 }
 
