@@ -16,6 +16,12 @@ public class Reservation {
         this.schedule = schedule;
     }
 
+    public Reservation(String name, String date, Schedule schedule) {
+        this.name = name;
+        this.date = date;
+        this.schedule = schedule;
+    }
+
     public Long getId() {
         return id;
     }

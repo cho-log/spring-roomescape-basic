@@ -6,8 +6,4 @@ public class ScheduleRequest {
     public String getTime() {
         return time;
     }
-
-    public Schedule toSchedule() {
-        return new Schedule(time);
-    }
 }

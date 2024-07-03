@@ -1,56 +1,46 @@
 package roomescape;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import roomescape.service.ScheduleService;
 
-import java.sql.PreparedStatement;
 import java.util.List;
 
 @RestController
 @RequestMapping("/schedules")
 public class ScheduleController {
 
-    private JdbcTemplate jdbcTemplate;
+    private ScheduleService scheduleService;
 
-    private RowMapper<Schedule> rowMapper = (rs, rowNum) -> new Schedule(
-            rs.getLong("id"),
-            rs.getString("time")
-    );
-
-    public ScheduleController(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public ScheduleController(ScheduleService scheduleService) {
+        this.scheduleService = scheduleService;
     }
 
     @GetMapping
     public ResponseEntity<List<Schedule>> findAll() {
-        String sql = "SELECT * FROM schedule";
-        List<Schedule> schedules = jdbcTemplate.query(sql, rowMapper);
+        List<Schedule> schedules = scheduleService.getSchedules();
         return ResponseEntity.ok(schedules);
     }
 
     @PostMapping
     public ResponseEntity<Schedule> create(@RequestBody ScheduleRequest request) {
-        String sql = "INSERT INTO schedule (time) VALUES (?)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
+        if (request.getTime().isEmpty()) {
+            throw new IllegalArgumentException("time is empty");
+        }
+        Schedule schedule = scheduleService.create(request);
 
-        jdbcTemplate.update(con -> {
-            PreparedStatement preparedStatement = con.prepareStatement(sql, new String[]{"id"});
-            preparedStatement.setString(1, request.getTime());
-            return preparedStatement;
-        }, keyHolder);
-
-        Schedule schedule = new Schedule(keyHolder.getKey().longValue(), request.getTime());
         return ResponseEntity.created(java.net.URI.create("/schedules/" + schedule.getId())).body(schedule);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        String sql = "DELETE FROM schedule WHERE id = ?";
-        jdbcTemplate.update(sql, id);
+        scheduleService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
